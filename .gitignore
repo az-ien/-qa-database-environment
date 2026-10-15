@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+python-tests/reports/
+artifacts/
+
+# Java and Maven
+java-tests/target/
+*.class
+
+# IDE and OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local environment files
+.env
+*.log
