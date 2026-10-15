@@ -160,9 +160,10 @@ That command deletes the container and the data volume stored inside it.
 
 `.github/workflows/database-tests.yml` runs on:
 
-- pushes to `main` or `master`
-- pull requests targeting `main` or `master`
+- pushes to `main`, including merges, squash merges, and rebase merges
 - manual `workflow_dispatch` runs
+
+Pull requests do not start this workflow. The pipeline runs after the changes are on `main`.
 
 The workflow has one job on `ubuntu-latest`. That job starts a single `postgres:17` service with a health check, checks out the code, installs the PostgreSQL client, applies `sql/schema.sql` and `sql/seed.sql`, and fails immediately unless exactly four expected users are present.
 

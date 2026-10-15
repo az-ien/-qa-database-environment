@@ -1,10 +1,10 @@
 name: Database Tests
 
 on:
+  # A merge into main is delivered as a push, including squash and rebase merges.
   push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
