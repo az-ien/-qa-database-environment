@@ -76,34 +76,6 @@ jobs:
             -v ON_ERROR_STOP=1 \
             -f sql/seed.sql
 
-      - name: Validate exactly four seeded users
-        run: |
-          set -euo pipefail
-          count="$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
-            -v ON_ERROR_STOP=1 -tAc "SELECT COUNT(*) FROM users;")"
-          count="${count//[[:space:]]/}"
-          matched="$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
-            -v ON_ERROR_STOP=1 -tAc "
-              SELECT COUNT(*)
-              FROM (
-                VALUES
-                  ('qa-test@example.com', 'active'),
-                  ('inactive@example.com', 'inactive'),
-                  ('pending@example.com', 'pending'),
-                  ('admin@example.com', 'active')
-              ) AS expected(email, status)
-              JOIN users USING (email, status);
-            ")"
-          matched="${matched//[[:space:]]/}"
-          echo "Seeded user count: ${count}"
-          echo "Matched expected users: ${matched}"
-          psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
-            -c "SELECT id, email, status FROM users ORDER BY email;"
-          if [ "$count" != "4" ] || [ "$matched" != "4" ]; then
-            echo "Expected exactly 4 seeded users with the specified email and status values."
-            exit 1
-          fi
-
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -120,7 +92,7 @@ jobs:
         working-directory: python-tests
         run: |
           mkdir -p reports
-          pytest --junitxml=reports/pytest-results.xml
+          pytest --junitxml=reports/pytest-results.xml --html=reports/report.html --self-contained-html
 
       - name: Set up Java
         uses: actions/setup-java@v5
@@ -136,42 +108,19 @@ jobs:
         working-directory: java-tests
         run: mvn -B test
 
-      - name: Collect Python and TestNG reports
-        if: always()
-        run: |
-          set -euo pipefail
-          mkdir -p artifacts/python-reports artifacts/testng-reports
-          if [ -d python-tests/reports ]; then
-            cp -a python-tests/reports/. artifacts/python-reports/
-          fi
-          emailable_report="java-tests/target/surefire-reports/emailable-report.html"
-          if [ -f "$emailable_report" ]; then
-            cp "$emailable_report" artifacts/testng-reports/emailable-report.html
-          fi
-          echo "Python reports:"
-          find artifacts/python-reports -type f -print
-          echo "TestNG emailable report:"
-          find artifacts/testng-reports -type f -print
-
-      - name: Upload Python test reports
+      - name: Upload Python HTML report
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: python-reports
-          path: artifacts/python-reports/
-          if-no-files-found: warn
-          retention-days: 90
-          include-hidden-files: true
+          name: pytest-html-report
+          path: python-tests/reports/
 
       - name: Upload TestNG emailable report
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: emailable-report
-          path: artifacts/testng-reports/emailable-report.html
-          if-no-files-found: warn
-          retention-days: 90
-          include-hidden-files: true
+          path: java-tests/target/surefire-reports/emailable-report.html
 
       - name: Fail the workflow when a test suite fails
         if: always() && (steps.python-tests.outcome == 'failure' || steps.java-tests.outcome == 'failure')

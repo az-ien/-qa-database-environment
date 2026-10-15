@@ -167,9 +167,9 @@ That command deletes the container and the data volume stored inside it.
 
 Pull requests do not start this workflow. The pipeline runs after the changes are on `main`.
 
-The workflow has one job on `ubuntu-latest`. That job starts a single `postgres:17` service with a health check, checks out the code, installs the PostgreSQL client, applies `sql/schema.sql` and `sql/seed.sql`, and fails immediately unless exactly four expected users are present.
+The workflow has one job on `ubuntu-latest`. That job starts a single `postgres:17` service with a health check, checks out the code, installs the PostgreSQL client, and applies `sql/schema.sql` and `sql/seed.sql`.
 
-It then installs Python 3.12 and the Python dependencies, runs pytest, sets up Temurin 17 and Maven, and runs `mvn test`. The PostgreSQL service stays up for both suites. A failure in one suite does not skip the other. The job still fails if setup, seed validation, pytest, or TestNG fails.
+It then installs Python 3.12 and the Python dependencies, runs pytest, sets up Temurin 17 and Maven, and runs `mvn test`. The PostgreSQL service stays up for both suites. A failure in one suite does not skip the other. The job still fails if setup, pytest, or TestNG fails.
 
 GitHub deletes the service container at the end of the job. There is no persistent database left behind, including when the job fails or is cancelled.
 
@@ -177,10 +177,10 @@ GitHub deletes the service container at the end of the job. There is no persiste
 
 | Suite | Local path | Actions artifact |
 |---|---|---|
-| Python | `python-tests/reports/pytest-results.xml` | `python-reports` |
+| Python | `python-tests/reports/report.html` | `pytest-html-report` |
 | TestNG | `java-tests/target/surefire-reports/emailable-report.html` | `emailable-report` |
 
-pytest writes the JUnit XML report. Surefire writes the full TestNG output locally, and the workflow uploads only `emailable-report.html`. Both artifacts are uploaded after the tests finish, including when a suite fails, and they are kept for 90 days. Open the workflow run and download them from the Artifacts section.
+pytest writes a self-contained HTML report to `python-tests/reports/report.html`, and the same folder also contains the JUnit XML file. Surefire writes the full TestNG output locally, and the workflow uploads only `emailable-report.html`. Both artifacts are uploaded after the tests finish, including when a suite fails. Open the workflow run and download them from the Artifacts section.
 
 Generated reports and Maven `target/` output are gitignored.
 
