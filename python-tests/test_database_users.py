@@ -9,6 +9,7 @@ import psycopg
 import pytest
 from psycopg import Connection
 
+# The four users inserted by sql/seed.sql, mapped to the status each one must have.
 EXPECTED_USERS = {
     "qa-test@example.com": "active",
     "inactive@example.com": "inactive",
@@ -49,6 +50,7 @@ def db_connection() -> Iterator[Connection]:
         connection.close()
 
 
+# Confirms PostgreSQL accepts the connection and answers a trivial query.
 def test_postgresql_connectivity(db_connection: Connection) -> None:
     with db_connection.cursor() as cursor:
         cursor.execute("SELECT 1")
@@ -58,6 +60,7 @@ def test_postgresql_connectivity(db_connection: Connection) -> None:
     assert row[0] == 1, f"Expected SELECT 1 to return 1, got {row[0]!r}"
 
 
+# Confirms public.users exists, has id, email, status, and created_at, and can be queried.
 def test_users_table_exists_and_is_queryable(db_connection: Connection) -> None:
     with db_connection.cursor() as cursor:
         cursor.execute(
@@ -96,6 +99,7 @@ def test_users_table_exists_and_is_queryable(db_connection: Connection) -> None:
     )
 
 
+# Confirms a fresh database contains the four seeded users and no extra rows.
 def test_exactly_four_seeded_users_exist(db_connection: Connection) -> None:
     with db_connection.cursor() as cursor:
         cursor.execute("SELECT COUNT(*) FROM users")
@@ -105,6 +109,7 @@ def test_exactly_four_seeded_users_exist(db_connection: Connection) -> None:
     assert row[0] == 4, f"Expected exactly 4 seeded users, found {row[0]}"
 
 
+# Runs once per seeded address and confirms that exact email is stored.
 @pytest.mark.parametrize("email", sorted(EXPECTED_USERS))
 def test_expected_email_exists(db_connection: Connection, email: str) -> None:
     with db_connection.cursor() as cursor:
@@ -115,6 +120,7 @@ def test_expected_email_exists(db_connection: Connection, email: str) -> None:
     assert row[0] == email, f"Expected stored email {email!r}, found {row[0]!r}"
 
 
+# Runs once per seeded user and confirms that email has its expected status.
 @pytest.mark.parametrize(("email", "expected_status"), sorted(EXPECTED_USERS.items()))
 def test_email_has_expected_status(
     db_connection: Connection,
@@ -131,6 +137,7 @@ def test_email_has_expected_status(
     )
 
 
+# Confirms the four seeded email addresses are present and none is repeated.
 def test_seeded_emails_are_unique(db_connection: Connection) -> None:
     with db_connection.cursor() as cursor:
         cursor.execute("SELECT email FROM users")
@@ -143,6 +150,7 @@ def test_seeded_emails_are_unique(db_connection: Connection) -> None:
     )
 
 
+# Confirms none of the four seeded users has a null email or status.
 def test_seeded_email_and_status_are_not_null(db_connection: Connection) -> None:
     with db_connection.cursor() as cursor:
         cursor.execute(

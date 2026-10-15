@@ -21,8 +21,10 @@ import java.util.Set;
  */
 public class DatabaseUsersTest {
 
+    // The four users inserted by sql/seed.sql, mapped to the status each one must have.
     private static final Map<String, String> EXPECTED_USERS = expectedUsers();
 
+    // Builds the expected email-to-status mapping in a stable order.
     private static Map<String, String> expectedUsers() {
         Map<String, String> users = new LinkedHashMap<>();
         users.put("qa-test@example.com", "active");
@@ -32,6 +34,7 @@ public class DatabaseUsersTest {
         return Collections.unmodifiableMap(users);
     }
 
+    // Supplies each seeded email so the existence check runs once per address.
     @DataProvider(name = "expectedEmails")
     public Object[][] expectedEmails() {
         return EXPECTED_USERS.keySet().stream()
@@ -39,6 +42,7 @@ public class DatabaseUsersTest {
                 .toArray(Object[][]::new);
     }
 
+    // Supplies each seeded email and its expected status as one TestNG case.
     @DataProvider(name = "expectedUsers")
     public Object[][] expectedUserRows() {
         return EXPECTED_USERS.entrySet().stream()
@@ -46,6 +50,7 @@ public class DatabaseUsersTest {
                 .toArray(Object[][]::new);
     }
 
+    // Confirms PostgreSQL accepts the JDBC connection and answers a trivial query.
     @Test
     public void databaseIsReachable() throws SQLException {
         try (Connection connection = openConnection();
@@ -56,6 +61,7 @@ public class DatabaseUsersTest {
         }
     }
 
+    // Confirms public.users exists, has id, email, status, and created_at, and can be queried.
     @Test
     public void usersTableExistsAndIsQueryable() throws SQLException {
         String tableSql = """
@@ -109,6 +115,7 @@ public class DatabaseUsersTest {
         }
     }
 
+    // Confirms a fresh database contains the four seeded users and no extra rows.
     @Test
     public void exactlyFourSeededUsersExist() throws SQLException {
         try (Connection connection = openConnection();
@@ -119,6 +126,7 @@ public class DatabaseUsersTest {
         }
     }
 
+    // Confirms one seeded email is stored exactly once.
     @Test(dataProvider = "expectedEmails")
     public void expectedEmailExists(String email) throws SQLException {
         try (Connection connection = openConnection();
@@ -133,6 +141,7 @@ public class DatabaseUsersTest {
         }
     }
 
+    // Confirms one seeded email has the status defined for it in the seed data.
     @Test(dataProvider = "expectedUsers")
     public void emailHasExpectedStatus(String email, String expectedStatus) throws SQLException {
         try (Connection connection = openConnection();
@@ -149,6 +158,7 @@ public class DatabaseUsersTest {
         }
     }
 
+    // Confirms the four seeded email addresses are present and none is repeated.
     @Test
     public void seededEmailsAreUnique() throws SQLException {
         Set<String> emails = new HashSet<>();
@@ -166,6 +176,7 @@ public class DatabaseUsersTest {
         Assert.assertEquals(emails, EXPECTED_USERS.keySet(), "Seeded emails did not match the expected set");
     }
 
+    // Confirms none of the four seeded users has a null email or status.
     @Test
     public void seededEmailAndStatusAreNotNull() throws SQLException {
         String seededSql = "SELECT email, status FROM users WHERE email = ?";
@@ -196,6 +207,7 @@ public class DatabaseUsersTest {
         }
     }
 
+    // Opens a read-only connection. Environment variables override the disposable defaults.
     private Connection openConnection() throws SQLException {
         String host = env("DB_HOST", "localhost");
         String port = env("DB_PORT", "5432");

@@ -144,12 +144,13 @@ jobs:
           if [ -d python-tests/reports ]; then
             cp -a python-tests/reports/. artifacts/python-reports/
           fi
-          if [ -d java-tests/target/surefire-reports ]; then
-            cp -a java-tests/target/surefire-reports/. artifacts/testng-reports/
+          emailable_report="java-tests/target/surefire-reports/emailable-report.html"
+          if [ -f "$emailable_report" ]; then
+            cp "$emailable_report" artifacts/testng-reports/emailable-report.html
           fi
           echo "Python reports:"
           find artifacts/python-reports -type f -print
-          echo "TestNG reports:"
+          echo "TestNG emailable report:"
           find artifacts/testng-reports -type f -print
 
       - name: Upload Python test reports
@@ -162,12 +163,12 @@ jobs:
           retention-days: 90
           include-hidden-files: true
 
-      - name: Upload TestNG reports
+      - name: Upload TestNG emailable report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: testng-reports
-          path: artifacts/testng-reports/
+          name: emailable-report
+          path: artifacts/testng-reports/emailable-report.html
           if-no-files-found: warn
           retention-days: 90
           include-hidden-files: true

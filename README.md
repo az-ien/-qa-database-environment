@@ -176,9 +176,9 @@ GitHub deletes the service container at the end of the job. There is no persiste
 | Suite | Local path | Actions artifact |
 |---|---|---|
 | Python | `python-tests/reports/pytest-results.xml` | `python-reports` |
-| TestNG | `java-tests/target/surefire-reports/` | `testng-reports` |
+| TestNG | `java-tests/target/surefire-reports/emailable-report.html` | `emailable-report` |
 
-pytest writes the JUnit XML report. Surefire writes the TestNG XML and HTML reports, including `TEST-*.xml`, `testng-results.xml`, and `index.html`. The workflow copies both report directories and uploads them after the tests finish, including when a suite fails. The artifacts are kept for 90 days. Open the workflow run and download them from the Artifacts section.
+pytest writes the JUnit XML report. Surefire writes the full TestNG output locally, and the workflow uploads only `emailable-report.html`. Both artifacts are uploaded after the tests finish, including when a suite fails, and they are kept for 90 days. Open the workflow run and download them from the Artifacts section.
 
 Generated reports and Maven `target/` output are gitignored.
 
