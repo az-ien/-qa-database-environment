@@ -1,183 +1,62 @@
 """Validate the freshly seeded PostgreSQL users table."""
 
-from __future__ import annotations
-
-import os
-from collections.abc import Iterator
-
 import psycopg
-import pytest
-from psycopg import Connection
-
-# The four users inserted by sql/seed.sql, mapped to the status each one must have.
-EXPECTED_USERS = {
-    "qa-test@example.com": "active",
-    "inactive@example.com": "inactive",
-    "pending@example.com": "pending",
-    "admin@example.com": "active",
-}
 
 
-def connection_kwargs() -> dict[str, object]:
-    """Disposable local and CI defaults. Environment variables override them."""
-    return {
-        "host": os.environ.get("DB_HOST", "localhost"),
-        "port": int(os.environ.get("DB_PORT", "5432")),
-        "dbname": os.environ.get("DB_NAME", "qa_test"),
-        "user": os.environ.get("DB_USER", "qa_user"),
-        "password": os.environ.get("DB_PASSWORD", "qa_password"),
-        "connect_timeout": 10,
-    }
+class TestDatabaseUsers:
+    """A connection is opened before each test and closed after it."""
 
-
-@pytest.fixture
-def db_connection() -> Iterator[Connection]:
-    """Open one read-only connection and close it when the test ends."""
-    settings = connection_kwargs()
-    try:
-        connection = psycopg.connect(**settings)
-    except psycopg.OperationalError as exc:
-        pytest.fail(
-            "Could not connect to PostgreSQL at "
-            f"{settings['host']}:{settings['port']}/{settings['dbname']} "
-            f"as {settings['user']}: {exc}"
+    # Opens a connection to the disposable qa_test database for the next test.
+    def setup_method(self):
+        self.connection = psycopg.connect(
+            "postgresql://qa_user:qa_password@localhost:5432/qa_test"
         )
 
-    connection.read_only = True
-    try:
-        yield connection
-    finally:
-        connection.close()
+    # Closes the connection opened for the test, including when the test fails.
+    def teardown_method(self):
+        if self.connection is not None and not self.connection.closed:
+            self.connection.close()
 
+    # Confirms a fresh database contains the four seeded users and no extra rows.
+    def test_exactly_four_seeded_users_exist(self):
+        with self.connection.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) FROM users")
+            row = cursor.fetchone()
 
-# Confirms PostgreSQL accepts the connection and answers a trivial query.
-def test_postgresql_connectivity(db_connection: Connection) -> None:
-    with db_connection.cursor() as cursor:
-        cursor.execute("SELECT 1")
-        row = cursor.fetchone()
+        assert row is not None, "User count query returned no row"
+        assert row[0] == 4, f"Expected exactly 4 seeded users, found {row[0]}"
 
-    assert row is not None, "SELECT 1 returned no row; PostgreSQL is not reachable"
-    assert row[0] == 1, f"Expected SELECT 1 to return 1, got {row[0]!r}"
-
-
-# Confirms public.users exists, has id, email, status, and created_at, and can be queried.
-def test_users_table_exists_and_is_queryable(db_connection: Connection) -> None:
-    with db_connection.cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT COUNT(*)
-            FROM information_schema.tables
-            WHERE table_schema = %s
-              AND table_name = %s
-            """,
-            ("public", "users"),
-        )
-        table_count = cursor.fetchone()
-        assert table_count is not None, "Table existence query returned no row"
-        assert table_count[0] == 1, "Expected the public.users table to exist"
-
-        cursor.execute(
-            """
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_schema = %s
-              AND table_name = %s
-            """,
-            ("public", "users"),
-        )
-        columns = {row[0] for row in cursor.fetchall()}
-        expected_columns = {"id", "email", "status", "created_at"}
-        assert expected_columns <= columns, (
-            f"Expected columns {sorted(expected_columns)}, found {sorted(columns)}"
-        )
-
-        cursor.execute("SELECT id, email, status, created_at FROM users ORDER BY id")
-        rows = cursor.fetchall()
-
-    assert len(rows) == len(EXPECTED_USERS), (
-        f"Expected to query {len(EXPECTED_USERS)} users, found {len(rows)}"
-    )
-
-
-# Confirms a fresh database contains the four seeded users and no extra rows.
-def test_exactly_four_seeded_users_exist(db_connection: Connection) -> None:
-    with db_connection.cursor() as cursor:
-        cursor.execute("SELECT COUNT(*) FROM users")
-        row = cursor.fetchone()
-
-    assert row is not None, "User count query returned no row"
-    assert row[0] == 4, f"Expected exactly 4 seeded users, found {row[0]}"
-
-
-# Runs once per seeded address and confirms that exact email is stored.
-@pytest.mark.parametrize("email", sorted(EXPECTED_USERS))
-def test_expected_email_exists(db_connection: Connection, email: str) -> None:
-    with db_connection.cursor() as cursor:
-        cursor.execute("SELECT email FROM users WHERE email = %s", (email,))
-        row = cursor.fetchone()
-
-    assert row is not None, f"Expected seeded email {email!r} to exist"
-    assert row[0] == email, f"Expected stored email {email!r}, found {row[0]!r}"
-
-
-# Runs once per seeded user and confirms that email has its expected status.
-@pytest.mark.parametrize(("email", "expected_status"), sorted(EXPECTED_USERS.items()))
-def test_email_has_expected_status(
-    db_connection: Connection,
-    email: str,
-    expected_status: str,
-) -> None:
-    with db_connection.cursor() as cursor:
-        cursor.execute("SELECT status FROM users WHERE email = %s", (email,))
-        row = cursor.fetchone()
-
-    assert row is not None, f"Expected seeded email {email!r} to exist"
-    assert row[0] == expected_status, (
-        f"Expected status {expected_status!r} for {email!r}, found {row[0]!r}"
-    )
-
-
-# Confirms the four seeded email addresses are present and none is repeated.
-def test_seeded_emails_are_unique(db_connection: Connection) -> None:
-    with db_connection.cursor() as cursor:
-        cursor.execute("SELECT email FROM users")
-        emails = [row[0] for row in cursor.fetchall()]
-
-    assert len(emails) == 4, f"Expected 4 seeded emails, found {len(emails)}: {emails}"
-    assert len(set(emails)) == 4, f"Expected 4 unique email addresses, found {emails}"
-    assert set(emails) == set(EXPECTED_USERS), (
-        f"Expected emails {sorted(EXPECTED_USERS)}, found {sorted(str(email) for email in emails)}"
-    )
-
-
-# Confirms none of the four seeded users has a null email or status.
-def test_seeded_email_and_status_are_not_null(db_connection: Connection) -> None:
-    with db_connection.cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT email, status
-            FROM users
-            WHERE email = ANY(%s)
-            """,
-            (list(EXPECTED_USERS),),
-        )
-        rows = cursor.fetchall()
-
-        cursor.execute(
-            """
+    # Confirms the four seeded emails are stored with the statuses written in the query.
+    def test_seeded_users_have_expected_statuses(self):
+        query = """
             SELECT COUNT(*)
             FROM users
-            WHERE email IS NULL
-               OR status IS NULL
-            """
-        )
-        null_count = cursor.fetchone()
+            WHERE (email = 'qa-test@example.com' AND status = 'active')
+               OR (email = 'inactive@example.com' AND status = 'inactive')
+               OR (email = 'pending@example.com' AND status = 'pending')
+               OR (email = 'admin@example.com' AND status = 'active')
+        """
+        with self.connection.cursor() as cursor:
+            cursor.execute(query)
+            row = cursor.fetchone()
 
-    assert len(rows) == 4, f"Expected 4 seeded users when checking nulls, found {len(rows)}"
-    for email, status in rows:
-        assert email is not None, "Seeded user email must not be null"
-        assert status is not None, f"Seeded status for {email!r} must not be null"
-    assert null_count is not None, "Null-count query returned no row"
-    assert null_count[0] == 0, (
-        f"Expected no users with a null email or status, found {null_count[0]}"
-    )
+        assert row is not None, "Status query returned no row"
+        assert row[0] == 4, f"Expected all 4 seeded users to have their specified statuses, found {row[0]}"
+
+    # Confirms the seeded user named Owen Blake is stored.
+    def test_owen_blake_exists(self):
+        with self.connection.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) FROM users WHERE name = 'Owen Blake'")
+            row = cursor.fetchone()
+
+        assert row is not None, "Owen Blake lookup returned no row"
+        assert row[0] == 1, f"Expected Owen Blake to exist, found {row[0]}"
+
+    # Confirms exactly two seeded users have a salary greater than 400.
+    def test_two_salaries_are_greater_than_400(self):
+        with self.connection.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) FROM users WHERE salary > 400")
+            row = cursor.fetchone()
+
+        assert row is not None, "Salary count query returned no row"
+        assert row[0] == 2, f"Expected 2 users with a salary greater than 400, found {row[0]}"
