@@ -2,6 +2,8 @@
 
 import psycopg  # Driver that lets Python talk to PostgreSQL.
 import pytest  # Provides the fixture that passes a connection into each test.
+from expects import be_above, contain, equal, expect  # be_above compares a salary; contain looks for a value in a row; equal compares a count.
+from psycopg.rows import dict_row  # Returns each row as a dictionary keyed by column name.
 
 
 # Opens a connection before each test that asks for it, then closes that connection.
@@ -26,10 +28,8 @@ def test_exactly_four_seeded_users_exist(connect):
         # Read the single count row returned by that query.
         row = cursor.fetchone()
 
-    # Fail if the database did not return a count.
-    assert row is not None, "User count query returned no row"
     # Fail unless that count is exactly 4.
-    assert row[0] == 4, f"Expected exactly 4 seeded users, found {row[0]}"
+    expect(row[0]).to(equal(4))
 
 
 # Confirms the four seeded emails are stored with the statuses written in the query.
@@ -50,37 +50,37 @@ def test_seeded_users_have_expected_statuses(connect):
         # Read the count of matching users.
         row = cursor.fetchone()
 
-    # Fail if the database did not return a count.
-    assert row is not None, "Status query returned no row"
     # Fail unless all four expected email and status pairs were found.
-    assert row[0] == 4, f"Expected all 4 seeded users to have their specified statuses, found {row[0]}"
+    expect(row[0]).to(equal(4))
 
 
 # Confirms the seeded user named Owen Blake is stored.
 def test_owen_blake_exists(connect):
     # Open a cursor for the name lookup.
     with connect.cursor() as cursor:
-        # Count users whose name is exactly Owen Blake.
-        cursor.execute("SELECT COUNT(*) FROM users WHERE name = 'Owen Blake'")
-        # Read that count.
+        # Read the user row stored for Owen Blake's email.
+        cursor.execute(
+            "SELECT name, email, status, salary FROM users WHERE email = 'admin@example.com'"
+        )
+        # Read that user row.
         row = cursor.fetchone()
 
-    # Fail if the database did not return a count.
-    assert row is not None, "Owen Blake lookup returned no row"
-    # Fail unless exactly one Owen Blake row exists.
-    assert row[0] == 1, f"Expected Owen Blake to exist, found {row[0]}"
+    # Fail unless the returned row contains the name Owen Blake.
+    expect(row).to(contain("Owen Blake"))
 
 
-# Confirms exactly two seeded users have a salary greater than 400.
-def test_two_salaries_are_greater_than_400(connect):
-    # Open a cursor for the salary check.
-    with connect.cursor() as cursor:
-        # Count users whose salary is greater than 400.
-        cursor.execute("SELECT COUNT(*) FROM users WHERE salary > 400")
-        # Read that count.
-        row = cursor.fetchone()
+# Confirms two user rows were returned and each salary is greater than 400.
+def test_salaries_are_greater_than_400(connect):
+    # Open a cursor that returns each row as a dictionary keyed by column name.
+    with connect.cursor(row_factory=dict_row) as cursor:
+        # Read every column for users whose salary is greater than 400.
+        cursor.execute("SELECT * FROM users WHERE salary > 400")
+        # Read all of those user rows.
+        rows = cursor.fetchall()
 
-    # Fail if the database did not return a count.
-    assert row is not None, "Salary count query returned no row"
-    # Fail unless exactly two users earn more than 400.
-    assert row[0] == 2, f"Expected 2 users with a salary greater than 400, found {row[0]}"
+    # Fail unless the query returned exactly two rows.
+    expect(len(rows)).to(equal(2))
+    # Check every returned row.
+    for row in rows:
+        # Fail unless this row's salary column is greater than 400.
+        expect(row["salary"]).to(be_above(400))

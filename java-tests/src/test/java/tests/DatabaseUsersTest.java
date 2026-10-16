@@ -78,28 +78,32 @@ public class DatabaseUsersTest {
     // Confirms the seeded user named Owen Blake is stored.
     @Test
     public void owenBlakeExists() throws SQLException {
-        // Create a statement and count users named Owen Blake.
+        // Create a statement and read the user row stored for Owen Blake's email.
         try (Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(
-                     "SELECT COUNT(*) FROM users WHERE name = 'Owen Blake'")) {
-            // Move to the count row. Fail if no row came back.
+                     "SELECT name, email, status, salary FROM users WHERE email = 'admin@example.com'")) {
+            // Move to that user row. Fail if no row came back.
             Assert.assertTrue(resultSet.next(), "Owen Blake lookup returned no row");
-            // Require exactly one Owen Blake row.
-            Assert.assertEquals(resultSet.getInt(1), 1, "Expected Owen Blake to exist");
+            // Fail unless the name column in this row is Owen Blake.
+            Assert.assertEquals(resultSet.getString("name"), "Owen Blake", "Expected the returned row to contain Owen Blake");
         } // Closing this block also closes the statement and the result set.
     }
 
-    // Confirms exactly two seeded users have a salary greater than 400.
+    // Confirms two user rows were returned and each salary is greater than 400.
     @Test
     public void twoSalariesAreGreaterThan400() throws SQLException {
-        // Create a statement and count users whose salary is greater than 400.
+        // Create a statement and read every column for users whose salary is greater than 400.
         try (Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(
-                     "SELECT COUNT(*) FROM users WHERE salary > 400")) {
-            // Move to the count row. Fail if no row came back.
-            Assert.assertTrue(resultSet.next(), "Salary count query returned no row");
-            // Require that count to be 2.
-            Assert.assertEquals(resultSet.getInt(1), 2, "Expected 2 users with a salary greater than 400");
+                     "SELECT * FROM users WHERE salary > 400")) {
+            // Count the rows while checking each salary. rowCount stays available after the loop.
+            int rowCount = 0;
+            for (; resultSet.next(); rowCount++) {
+                // Fail unless this row's salary column is greater than 400.
+                Assert.assertTrue(resultSet.getInt("salary") > 400, "Expected salary to be greater than 400");
+            }
+            // Fail unless the query returned exactly two rows.
+            Assert.assertEquals(rowCount, 2, "Expected 2 users with a salary greater than 400");
         } // Closing this block also closes the statement and the result set.
     }
 }

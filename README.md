@@ -80,7 +80,7 @@ No other users are seeded.
 
 ## Python tests
 
-`python-tests/test_database_users.py` uses pytest and psycopg 3. It checks that exactly four seeded users exist, that each email has its expected status, that Owen Blake exists, and that exactly two salaries are greater than 400.
+`python-tests/test_database_users.py` uses pytest, psycopg 3, and expects. It checks that exactly four seeded users exist, that each email has its expected status, that Owen Blake exists, and that each returned salary is greater than 400. The count checks use `expect(...).to(equal(...))`. The Owen Blake check reads that user's row and uses `expect(row).to(contain("Owen Blake"))`. The salary check reads each full user row, uses `expect(len(rows)).to(equal(2))`, and uses `expect(row["salary"]).to(be_above(400))`.
 
 A `connect` fixture opens `postgresql://qa_user:qa_password@localhost:5432/qa_test` and passes that connection into every test, then closes it. Query values are written directly in the SQL. Cursors are closed with context managers.
 
@@ -88,7 +88,7 @@ Python 3.12 is the version used in GitHub Actions.
 
 ## Java tests
 
-`java-tests` is a Maven module on Java 17. `DatabaseUsersTest` checks the same four users and statuses as the Python suite, and also checks that Owen Blake exists and that exactly two salaries are greater than 400. Query values are written directly in the SQL and executed with JDBC `Statement`. `@BeforeMethod` opens a connection before each test, and `@AfterMethod` closes it. Statements and result sets are closed with try-with-resources.
+`java-tests` is a Maven module on Java 17. `DatabaseUsersTest` checks the same four users and statuses as the Python suite. The Owen Blake check reads that user's row and requires the name column to be Owen Blake. The salary check reads each full user row, requires `salary` to be greater than 400, and requires exactly two rows. Query values are written directly in the SQL and executed with JDBC `Statement`. `@BeforeMethod` opens a connection before each test, and `@AfterMethod` closes it. Statements and result sets are closed with try-with-resources.
 
 Maven Surefire runs the TestNG classes and writes XML reports to `java-tests/target/surefire-reports/`.
 
