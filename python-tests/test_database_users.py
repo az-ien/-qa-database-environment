@@ -1,26 +1,26 @@
 """Validate the freshly seeded PostgreSQL users table."""
 
 import psycopg  # Driver that lets Python talk to PostgreSQL.
-import pytest  # Provides the fixture that passes a DBconnect into each test.
+import pytest  # Provides the fixture that passes a connection into each test.
 
 
-# Opens a DBconnect before each test that asks for it, then closes that DBconnect.
+# Opens a connection before each test that asks for it, then closes that connection.
 @pytest.fixture
 def connect():
     # Open the disposable qa_test database on this machine as qa_user.
     DBconnect = psycopg.connect(
         "postgresql://qa_user:qa_password@localhost:5432/qa_test"
     )
-    # Hand this DBconnect to the test.
+    # Hand this connection to the test.
     yield DBconnect
-    # Close the DBconnect after the test, including when the test fails.
+    # Close the connection after the test, including when the test fails.
     DBconnect.close()
 
 
 # Confirms a fresh database contains the four seeded users and no extra rows.
-def test_exactly_four_seeded_users_exist(DBconnect):
+def test_exactly_four_seeded_users_exist(connect):
     # Open a cursor, which is the object that sends SQL and reads results.
-    with DBconnect.cursor() as cursor:
+    with connect.cursor() as cursor:
         # Ask the database how many rows are in the users table.
         cursor.execute("SELECT COUNT(*) FROM users")
         # Read the single count row returned by that query.
@@ -33,7 +33,7 @@ def test_exactly_four_seeded_users_exist(DBconnect):
 
 
 # Confirms the four seeded emails are stored with the statuses written in the query.
-def test_seeded_users_have_expected_statuses(DBconnect):
+def test_seeded_users_have_expected_statuses(connect):
     # Count rows that match one of the four expected email and status pairs.
     query = """
         SELECT COUNT(*)
@@ -44,7 +44,7 @@ def test_seeded_users_have_expected_statuses(DBconnect):
            OR (email = 'admin@example.com' AND status = 'active')
     """
     # Open a cursor for this query.
-    with DBconnect.cursor() as cursor:
+    with connect.cursor() as cursor:
         # Run the status query.
         cursor.execute(query)
         # Read the count of matching users.
@@ -57,9 +57,9 @@ def test_seeded_users_have_expected_statuses(DBconnect):
 
 
 # Confirms the seeded user named Owen Blake is stored.
-def test_owen_blake_exists(DBconnect):
+def test_owen_blake_exists(connect):
     # Open a cursor for the name lookup.
-    with DBconnect.cursor() as cursor:
+    with connect.cursor() as cursor:
         # Count users whose name is exactly Owen Blake.
         cursor.execute("SELECT COUNT(*) FROM users WHERE name = 'Owen Blake'")
         # Read that count.
@@ -72,9 +72,9 @@ def test_owen_blake_exists(DBconnect):
 
 
 # Confirms exactly two seeded users have a salary greater than 400.
-def test_two_salaries_are_greater_than_400(DBconnect):
+def test_two_salaries_are_greater_than_400(connect):
     # Open a cursor for the salary check.
-    with DBconnect.cursor() as cursor:
+    with connect.cursor() as cursor:
         # Count users whose salary is greater than 400.
         cursor.execute("SELECT COUNT(*) FROM users WHERE salary > 400")
         # Read that count.
