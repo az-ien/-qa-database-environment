@@ -1,19 +1,19 @@
 """Validate the freshly seeded PostgreSQL users table."""
 
 import psycopg  # Driver that lets Python talk to PostgreSQL.
-import pytest  # Provides the fixture that passes a connection into each test.
+import pytest  # Provides the fixture that passes a DBconnect into each test.
 
 
-# Opens a connection before each test that asks for it, then closes that connection.
+# Opens a DBconnect before each test that asks for it, then closes that DBconnect.
 @pytest.fixture
-def DBconnect():
+def connect():
     # Open the disposable qa_test database on this machine as qa_user.
     DBconnect = psycopg.connect(
         "postgresql://qa_user:qa_password@localhost:5432/qa_test"
     )
-    # Hand this connection to the test.
+    # Hand this DBconnect to the test.
     yield DBconnect
-    # Close the connection after the test, including when the test fails.
+    # Close the DBconnect after the test, including when the test fails.
     DBconnect.close()
 
 
