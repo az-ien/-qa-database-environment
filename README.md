@@ -82,7 +82,7 @@ No other users are seeded.
 
 `python-tests/test_database_users.py` uses pytest and psycopg 3. It checks that exactly four seeded users exist, that each email has its expected status, that Owen Blake exists, and that exactly two salaries are greater than 400.
 
-`setup_method` opens `postgresql://qa_user:qa_password@localhost:5432/qa_test` before each test, and `teardown_method` closes it. Query values are written directly in the SQL. Cursors are closed with context managers.
+A `DBconnect` fixture opens `postgresql://qa_user:qa_password@localhost:5432/qa_test` and passes that connection into every test, then closes it. Query values are written directly in the SQL. Cursors are closed with context managers.
 
 Python 3.12 is the version used in GitHub Actions.
 
