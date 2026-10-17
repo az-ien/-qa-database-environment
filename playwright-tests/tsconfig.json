@@ -1,0 +1,14 @@
+// "types": ["node"] tells TypeScript to include Node type definitions.
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "commonjs",
+    "strict": true,
+    "types": ["node"],
+    "esModuleInterop": true
+  },
+  "include": [
+    "playwright.config.ts",
+    "tests/**/*.ts"
+  ]
+}

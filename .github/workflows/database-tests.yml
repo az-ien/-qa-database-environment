@@ -108,6 +108,27 @@ jobs:
         working-directory: java-tests
         run: mvn -B test
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: playwright-tests/package-lock.json
+
+      - name: Install Node dependencies
+        working-directory: playwright-tests
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: playwright-tests
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright database tests
+        id: playwright-tests
+        continue-on-error: true
+        working-directory: playwright-tests
+        run: npx playwright test
+
       - name: Upload Python HTML report
         if: always()
         uses: actions/upload-artifact@v6
@@ -122,9 +143,17 @@ jobs:
           name: emailable-report
           path: java-tests/target/surefire-reports/emailable-report.html
 
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report
+          path: playwright-tests/playwright-report/
+
       - name: Fail the workflow when a test suite fails
-        if: always() && (steps.python-tests.outcome == 'failure' || steps.java-tests.outcome == 'failure')
+        if: always() && (steps.python-tests.outcome == 'failure' || steps.java-tests.outcome == 'failure' || steps.playwright-tests.outcome == 'failure')
         run: |
           echo "Python tests outcome: ${{ steps.python-tests.outcome }}"
           echo "Java tests outcome: ${{ steps.java-tests.outcome }}"
+          echo "Playwright tests outcome: ${{ steps.playwright-tests.outcome }}"
           exit 1

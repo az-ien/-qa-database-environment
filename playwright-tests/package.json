@@ -1,0 +1,21 @@
+{
+  "name": "qa-database-environment",
+  "version": "1.0.0",
+  "description": "Playwright checks for the disposable qa_test database",
+  "private": true,
+  "scripts": {
+    "test": "playwright test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^24.12.0",
+    "@types/pg": "^8.15.5"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
+  }
+}

@@ -1,6 +1,6 @@
 # QA Database Environment
 
-This repository provisions a disposable PostgreSQL 17 database, creates a `users` table, inserts exactly four dummy users, and validates that data with Python (pytest and psycopg) and Java (TestNG and JDBC).
+This repository provisions a disposable PostgreSQL 17 database, creates a `users` table, inserts exactly four dummy users, and validates that data with Python (pytest and psycopg), Java (TestNG and JDBC), and Playwright (TypeScript and node-pg).
 
 Both suites run in one GitHub Actions job against the same PostgreSQL service. The database exists only for that job. GitHub removes the service container when the job finishes, which destroys the database and its data.
 
@@ -29,12 +29,14 @@ GitHub Actions job
         │
         ├─ pytest + psycopg
         │
-        └─ mvn test (TestNG + JDBC)
+        ├─ mvn test (TestNG + JDBC)
+        │
+        └─ Playwright + node-pg
               │
               └─ job ends → container and database are destroyed
 ```
 
-There is no web application in this repository. The tests talk to PostgreSQL directly.
+There is no web application in this repository. The tests talk to PostgreSQL directly. The Playwright suite uses the Playwright test runner and does not open a browser page.
 
 ## Directory structure
 
@@ -50,6 +52,14 @@ qa-database-environment/
 ├── java-tests/
 │   ├── pom.xml
 │   └── src/test/java/tests/DatabaseUsersTest.java
+├── playwright-tests/
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── playwright.config.ts
+│   ├── tsconfig.json
+│   └── tests/
+│       ├── database.fixture.ts
+│       └── users.spec.ts
 ├── .gitignore
 └── README.md
 ```
@@ -94,6 +104,12 @@ Maven Surefire runs the TestNG classes and writes XML reports to `java-tests/tar
 
 The Java tests connect with `jdbc:postgresql://localhost:5432/qa_test` as `qa_user`.
 
+## Playwright tests
+
+`playwright-tests/tests/users.spec.ts` uses the same four checks as the Python and Java suites. `playwright-tests/tests/database.fixture.ts` opens `postgresql://qa_user:qa_password@localhost:5432/qa_test` and passes that connection into every test, then closes it. Query values are written directly in the SQL.
+
+`playwright-tests/playwright.config.ts` runs the `tests` folder on the Chromium project, retries twice on CI, and writes an HTML report to `playwright-tests/playwright-report/`. Traces are collected for every test. These tests do not open a page, so there is no application URL.
+
 ## Run locally
 
 Install Docker, Python 3.12, JDK 17, and Maven. Start a temporary database:
@@ -122,7 +138,7 @@ Get-Content sql\schema.sql | docker exec -i qa-postgres psql -U qa_user -d qa_te
 Get-Content sql\seed.sql | docker exec -i qa-postgres psql -U qa_user -d qa_test -v ON_ERROR_STOP=1
 ```
 
-Both test suites connect to this container at `localhost:5432`, database `qa_test`, as `qa_user`.
+All three test suites connect to this container at `localhost:5432`, database `qa_test`, as `qa_user`.
 
 Python:
 
@@ -150,6 +166,14 @@ Java, from `java-tests`:
 mvn test
 ```
 
+Playwright, from `playwright-tests`:
+
+```bash
+npm install
+npx playwright test
+npx playwright show-report
+```
+
 Remove the local database when you are finished:
 
 ```bash
@@ -169,7 +193,7 @@ Pull requests do not start this workflow. The pipeline runs after the changes ar
 
 The workflow has one job on `ubuntu-latest`. That job starts a single `postgres:17` service with a health check, checks out the code, installs the PostgreSQL client, and applies `sql/schema.sql` and `sql/seed.sql`.
 
-It then installs Python 3.12 and the Python dependencies, runs pytest, sets up Temurin 17 and Maven, and runs `mvn test`. The PostgreSQL service stays up for both suites. A failure in one suite does not skip the other. The job still fails if setup, pytest, or TestNG fails.
+It then installs Python 3.12 and the Python dependencies, runs pytest, sets up Temurin 17 and Maven, and runs `mvn test`. It then installs Node.js, runs `npm ci`, installs Playwright, and runs `npx playwright test`. The PostgreSQL service stays up for all three suites. A failure in one suite does not skip the others. The job still fails if setup, pytest, TestNG, or Playwright fails.
 
 GitHub deletes the service container at the end of the job. There is no persistent database left behind, including when the job fails or is cancelled.
 
@@ -179,8 +203,9 @@ GitHub deletes the service container at the end of the job. There is no persiste
 |---|---|---|
 | Python | `python-tests/reports/report.html` | `pytest-html-report` |
 | TestNG | `java-tests/target/surefire-reports/emailable-report.html` | `emailable-report` |
+| Playwright | `playwright-tests/playwright-report/` | `playwright-report` |
 
-pytest writes a self-contained HTML report to `python-tests/reports/report.html`, and the same folder also contains the JUnit XML file. Surefire writes the full TestNG output locally, and the workflow uploads only `emailable-report.html`. Both artifacts are uploaded after the tests finish, including when a suite fails. Open the workflow run and download them from the Artifacts section.
+pytest writes a self-contained HTML report to `python-tests/reports/report.html`, and the same folder also contains the JUnit XML file. Surefire writes the full TestNG output locally, and the workflow uploads only `emailable-report.html`. Playwright writes its HTML report to `playwright-tests/playwright-report/`. The workflow uploads that report. All three artifacts are uploaded after the tests finish, including when a suite fails. Open the workflow run and download them from the Artifacts section.
 
 Generated reports and Maven `target/` output are gitignored.
 
@@ -189,7 +214,7 @@ Generated reports and Maven `target/` output are gitignored.
 1. The workflow starts `postgres:17` with database `qa_test`.
 2. `schema.sql` creates `users` in that database.
 3. `seed.sql` inserts the four dummy users.
-4. Python and Java tests read the same data.
+4. Python, Java, and Playwright tests read the same data.
 5. The job ends and GitHub destroys the container, including the database files.
 
 A later workflow run creates a new empty database and seeds it again. Nothing from the previous run is reused.
@@ -208,12 +233,6 @@ psql "postgresql://USER:PASSWORD@HOST:5432/DATABASE" -v ON_ERROR_STOP=1 -f sql/s
 ```
 
 Use that project's own credentials. Do not reuse `qa_user` / `qa_password` outside disposable test databases.
-
-## Adding Playwright later
-
-Browser tests are not part of this project. There is no application URL, page, or selector to automate yet, and the database tests do not launch a browser.
-
-When an application exists, add UI tests beside the database tests, for example under `python-tests/ui/`, with Playwright installed only for that suite. Run them in a workflow job that starts the real application. Give that job its own database, created with these SQL scripts or connected to a persistent database the application owns. Keep that job separate from the database-validation job in this workflow so the PostgreSQL service here is still used only by the Python and Java database tests.
 
 ## Publish and run the workflow
 

@@ -20,3 +20,11 @@ Thumbs.db
 # Local environment files
 .env
 *.log
+
+# Playwright
+playwright-tests/node_modules/
+playwright-tests/test-results/
+playwright-tests/playwright-report/
+playwright-tests/blob-report/
+playwright-tests/playwright/.cache/
+playwright-tests/playwright/.auth/
