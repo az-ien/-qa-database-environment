@@ -1,12 +1,10 @@
 import { test, expect } from './database.fixture';
 
-// One users row returned by node-pg. Column names are the object keys.
-type UserRow = {
-  name: string;
-  email: string;
-  status: string;
-  salary: number;
-};
+
+
+//result.rows is that array. result.rows[0] is the only row. result.rows[0].count is the value in the count column. A query that returns four user rows uses the same array, with four objects in it instead of one.
+
+
 
 // Confirms a fresh database contains the four seeded users and no extra rows.
 test('exactly four seeded users exist', async ({ db }) => {
@@ -40,7 +38,7 @@ test('seeded users have expected statuses', async ({ db }) => {
 // Confirms the seeded user named Owen Blake is stored.
 test('Owen Blake exists', async ({ db }) => {
   // Read the user row stored for Owen Blake's email. Column names are the object keys.
-  const result = await db.query<UserRow>(
+  const result = await db.query(
     "SELECT name, email, status, salary FROM users WHERE email = 'admin@example.com'"
   );
   // Read that user row.
@@ -53,7 +51,7 @@ test('Owen Blake exists', async ({ db }) => {
 // Confirms two user rows were returned and each salary is greater than 400.
 test('salaries are greater than 400', async ({ db }) => {
   // Read every column for users whose salary is greater than 400.
-  const result = await db.query<UserRow>('SELECT * FROM users WHERE salary > 400');
+  const result = await db.query('SELECT * FROM users WHERE salary > 400');
   // Read all of those user rows.
   const rows = result.rows;
 

@@ -19,6 +19,9 @@ def connect():
     DBconnect.close()
 
 
+
+#result.rows is that array. result.rows[0] is the only row. result.rows[0].count is the value in the count column. A query that returns four user rows uses the same array, with four objects in it instead of one.
+
 # Confirms a fresh database contains the four seeded users and no extra rows.
 def test_exactly_four_seeded_users_exist(connect):
     # Open a cursor, which is the object that sends SQL and reads results.

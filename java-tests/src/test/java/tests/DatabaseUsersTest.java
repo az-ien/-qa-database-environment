@@ -1,15 +1,15 @@
 package tests; // Places this class in the tests package.
 
-import org.testng.Assert; // TestNG assertions that fail the test when a check is wrong.
-import org.testng.annotations.AfterMethod; // Marks the method that runs after each test.
-import org.testng.annotations.BeforeMethod; // Marks the method that runs before each test.
-import org.testng.annotations.Test; // Marks a method as a test.
+import java.sql.Connection; // TestNG assertions that fail the test when a check is wrong.
+import java.sql.DriverManager; // Marks the method that runs after each test.
+import java.sql.ResultSet; // Marks the method that runs before each test.
+import java.sql.SQLException; // Marks a method as a test.
+import java.sql.Statement; // A live session with PostgreSQL.
 
-import java.sql.Connection; // A live session with PostgreSQL.
-import java.sql.DriverManager; // Opens a JDBC connection from a URL, user, and password.
-import java.sql.ResultSet; // The rows returned by a query.
-import java.sql.SQLException; // The checked exception thrown when JDBC or SQL fails.
-import java.sql.Statement; // An object that sends one SQL string to the database.
+import org.testng.Assert; // Opens a JDBC connection from a URL, user, and password.
+import org.testng.annotations.AfterMethod; // The rows returned by a query.
+import org.testng.annotations.BeforeMethod; // The checked exception thrown when JDBC or SQL fails.
+import org.testng.annotations.Test; // An object that sends one SQL string to the database.
 
 /**
  * JDBC checks for the four users inserted by sql/seed.sql.
@@ -38,6 +38,11 @@ public class DatabaseUsersTest {
             connection.close();
         }
     }
+    
+
+    //result.rows is that array. result.rows[0] is the only row. result.rows[0].count is the value in the count column. A query that returns four user rows uses the same array, with four objects in it instead of one.
+
+
 
     // Confirms a fresh database contains the four seeded users and no extra rows.
     @Test
