@@ -39,15 +39,15 @@ test('seeded users have expected statuses', async ({ db }) => {
 
 // Confirms the seeded user named Owen Blake is stored.
 test('Owen Blake exists', async ({ db }) => {
-  // Read the user row stored for Owen Blake's email.
+  // Read the user row stored for Owen Blake's email. Column names are the object keys.
   const result = await db.query<UserRow>(
     "SELECT name, email, status, salary FROM users WHERE email = 'admin@example.com'"
   );
   // Read that user row.
   const row = result.rows[0];
 
-  // Fail unless the returned row contains the name Owen Blake.
-  expect(Object.values(row)).toContain('Owen Blake');
+  // Fail unless the name field is Owen Blake.
+  expect(row.name).toBe('Owen Blake');
 });
 
 // Confirms two user rows were returned and each salary is greater than 400.
