@@ -48,7 +48,8 @@ qa-database-environment/
 ├── python-tests/
 │   ├── requirements.txt
 │   ├── pytest.ini
-│   └── test_database_users.py
+│   └── tests/
+│       └── test_database_users.py
 ├── java-tests/
 │   ├── pom.xml
 │   └── src/test/java/tests/DatabaseUsersTest.java
@@ -90,7 +91,7 @@ No other users are seeded.
 
 ## Python tests
 
-`python-tests/test_database_users.py` uses pytest, psycopg 3, and expects. It checks that exactly four seeded users exist, that each email has its expected status, that Owen Blake exists, and that each returned salary is greater than 400. The count checks use `expect(...).to(equal(...))`. The Owen Blake check reads that user's row and uses `expect(row).to(contain("Owen Blake"))`. The salary check reads each full user row, uses `expect(len(rows)).to(equal(2))`, and uses `expect(row["salary"]).to(be_above(400))`.
+`python-tests/tests/test_database_users.py` uses pytest, psycopg 3, and expects. It checks that exactly four seeded users exist, that each email has its expected status, that Owen Blake exists, and that each returned salary is greater than 400. The count checks use `expect(...).to(equal(...))`. The Owen Blake check reads that user's row and uses `expect(row).to(contain("Owen Blake"))`. The salary check reads each full user row, uses `expect(len(rows)).to(equal(2))`, and uses `expect(row["salary"]).to(be_above(400))`.
 
 A `connect` fixture opens `postgresql://qa_user:qa_password@localhost:5432/qa_test` and passes that connection into every test, then closes it. Query values are written directly in the SQL. Cursors are closed with context managers.
 
