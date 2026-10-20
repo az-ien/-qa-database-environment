@@ -50,8 +50,8 @@ public class DatabaseUsersTest {
         // Create a statement and ask how many rows are in users.
         try (Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM users")) {
-            // Move to the single count row. Fail if no row came back.
-            Assert.assertTrue(resultSet.next(), "User count query returned no row");
+            // Move onto the single count row.
+            resultSet.next();
             // Read the first column, which is the count, and require it to be 4.
             Assert.assertEquals(resultSet.getInt(1), 4, "Expected exactly 4 seeded users");
         } // Closing this block also closes the statement and the result set.
@@ -73,8 +73,8 @@ public class DatabaseUsersTest {
         // Create a statement and run the status query.
         try (Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(query)) {
-            // Move to the count row. Fail if no row came back.
-            Assert.assertTrue(resultSet.next(), "Status query returned no row");
+            // Move onto the count row.
+            resultSet.next();
             // Require all four expected email and status pairs to be present.
             Assert.assertEquals(resultSet.getInt(1), 4, "Expected all 4 seeded users to have their specified statuses");
         } // Closing this block also closes the statement and the result set.
@@ -87,8 +87,8 @@ public class DatabaseUsersTest {
         try (Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(
                      "SELECT name, email, status, salary FROM users WHERE email = 'admin@example.com'")) {
-            // Move to that user row. Fail if no row came back.
-            Assert.assertTrue(resultSet.next(), "Owen Blake lookup returned no row");
+            // Move onto the returned user row.
+            resultSet.next();
             // Fail unless the name column in this row is Owen Blake.
             Assert.assertEquals(resultSet.getString("name"), "Owen Blake", "Expected the returned row to contain Owen Blake");
         } // Closing this block also closes the statement and the result set.
@@ -101,14 +101,17 @@ public class DatabaseUsersTest {
         try (Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(
                      "SELECT * FROM users WHERE salary > 400")) {
-            // Count the rows while checking each salary. rowCount stays available after the loop.
-            int rowCount = 0;
-            for (; resultSet.next(); rowCount++) {
+            // Holds the latest row number. Declared here so the check after the loop can read it.
+            int totalRowCount = 0;
+            // rowCount starts at 1, so the value stored on the last row equals the number of rows.
+            for (int rowCount = 1; resultSet.next(); rowCount++) {
                 // Fail unless this row's salary column is greater than 400.
                 Assert.assertTrue(resultSet.getInt("salary") > 400, "Expected salary to be greater than 400");
+                // Store this row number, replacing the value stored for the previous row.
+                totalRowCount = rowCount;
             }
-            // Fail unless the query returned exactly two rows.
-            Assert.assertEquals(rowCount, 2, "Expected 2 users with a salary greater than 400");
+            // Fail unless the last stored row number is 2.
+            Assert.assertEquals(totalRowCount, 2, "Expected 2 users with a salary greater than 400");
         } // Closing this block also closes the statement and the result set.
     }
 }
