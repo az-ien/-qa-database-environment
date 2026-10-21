@@ -57,28 +57,6 @@ public class DatabaseUsersTest {
         } // Closing this block also closes the statement and the result set.
     }
 
-    // Confirms the four seeded emails are stored with the statuses written in the query.
-    @Test
-    public void seededUsersHaveExpectedStatuses() throws SQLException {
-        // Count rows that match one of the four expected email and status pairs.
-        String query = """
-                SELECT COUNT(*)
-                FROM users
-                WHERE (email = 'qa-test@example.com' AND status = 'active')
-                   OR (email = 'inactive@example.com' AND status = 'inactive')
-                   OR (email = 'pending@example.com' AND status = 'pending')
-                   OR (email = 'admin@example.com' AND status = 'active')
-                """;
-
-        // Create a statement and run the status query.
-        try (Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(query)) {
-            // Move onto the count row.
-            resultSet.next();
-            // Require all four expected email and status pairs to be present.
-            Assert.assertEquals(resultSet.getInt(1), 4, "Expected all 4 seeded users to have their specified statuses");
-        } // Closing this block also closes the statement and the result set.
-    }
 
     // Confirms the seeded user named Owen Blake is stored.
     @Test

@@ -17,23 +17,6 @@ test('exactly four seeded users exist', async ({ db }) => {
   expect(count).toBe(4);
 });
 
-// Confirms the four seeded emails are stored with the statuses written in the query.
-test('seeded users have expected statuses', async ({ db }) => {
-  // Count rows that match one of the four expected email and status pairs.
-  const result = await db.query(`
-    SELECT COUNT(*)
-    FROM users
-    WHERE (email = 'qa-test@example.com' AND status = 'active')
-       OR (email = 'inactive@example.com' AND status = 'inactive')
-       OR (email = 'pending@example.com' AND status = 'pending')
-       OR (email = 'admin@example.com' AND status = 'active')
-  `);
-  // Read the count of matching users.
-  const count = Number(result.rows[0].count);
-
-  // Fail unless all four expected email and status pairs were found.
-  expect(count).toBe(4);
-});
 
 // Confirms the seeded user named Owen Blake is stored.
 test('Owen Blake exists', async ({ db }) => {

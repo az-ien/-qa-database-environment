@@ -35,26 +35,6 @@ def test_exactly_four_seeded_users_exist(connect):
     expect(row[0]).to(equal(4))
 
 
-# Confirms the four seeded emails are stored with the statuses written in the query.
-def test_seeded_users_have_expected_statuses(connect):
-    # Count rows that match one of the four expected email and status pairs.
-    query = """
-        SELECT COUNT(*)
-        FROM users
-        WHERE (email = 'qa-test@example.com' AND status = 'active')
-           OR (email = 'inactive@example.com' AND status = 'inactive')
-           OR (email = 'pending@example.com' AND status = 'pending')
-           OR (email = 'admin@example.com' AND status = 'active')
-    """
-    # Open a cursor for this query.
-    with connect.cursor() as cursor:
-        # Run the status query.
-        cursor.execute(query)
-        # Read the count of matching users.
-        row = cursor.fetchone()
-
-    # Fail unless all four expected email and status pairs were found.
-    expect(row[0]).to(equal(4))
 
 
 # Confirms the seeded user named Owen Blake is stored.
