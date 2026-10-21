@@ -61,9 +61,10 @@ def test_salaries_are_greater_than_400(connect):
         # Read all of those user rows.
         rows = cursor.fetchall()
 
-    # Fail unless the query returned exactly two rows.
-    expect(len(rows)).to(equal(2))
     # Check every returned row.
     for row in rows:
         # Fail unless this row's salary column is greater than 400.
         expect(row["salary"]).to(be_above(400))
+    
+    # Fail unless the query returned exactly two rows.
+    expect(len(rows)).to(equal(2))
