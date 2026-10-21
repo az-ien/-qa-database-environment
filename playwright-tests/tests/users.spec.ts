@@ -38,11 +38,13 @@ test('salaries are greater than 400', async ({ db }) => {
   // Read all of those user rows.
   const rows = result.rows;
 
-  // Fail unless the query returned exactly two rows.
-  expect(rows).toHaveLength(2);
   // Check every returned row.
   for (const row of rows) {
     // Fail unless this row's salary column is greater than 400.
     expect(row.salary).toBeGreaterThan(400);
   }
+  
+  // Fail unless the query returned exactly two rows.
+  expect(rows).toHaveLength(2);
+
 });
