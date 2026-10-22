@@ -68,3 +68,16 @@ def test_salaries_are_greater_than_400(connect):
     
     # Fail unless the query returned exactly two rows.
     expect(len(rows)).to(equal(2))
+
+# Check how many active users exist. The seeded users have two active and two inactive.
+def test_active_users_count(connect):
+    with connect.cursor(row_factory=dict_row) as cursor:
+        cursor.execute("Select * from users where status = 'active'")
+        rows = cursor.fetchall()
+
+    for row in rows:
+        expect(row.get('status')).to(equal('active'))
+        expect(['qa-test@example.com', 'admin@example.com']).to(contain(row.get("email")))
+
+    expect(len(rows)).to(equal(2))
+

@@ -48,3 +48,19 @@ test('salaries are greater than 400', async ({ db }) => {
   expect(rows).toHaveLength(2);
 
 });
+
+
+// Check how many active users exist. The seeded users have two active and two inactive.
+test('users that are active',async({db}) => {
+  const result  = await db.query("Select * from users where status  = 'active'");
+  const rows  =result.rows;
+  for (const row of rows)
+  {
+    expect(row.status).toBe('active');
+    expect(['qa-test@example.com', 'admin@example.com']).toContain(row.email);
+  }
+  expect(rows).toHaveLength(2)
+
+  
+
+});

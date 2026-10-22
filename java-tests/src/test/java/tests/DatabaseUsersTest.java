@@ -92,4 +92,27 @@ public class DatabaseUsersTest {
             Assert.assertEquals(totalRowCount, 2, "Expected 2 users with a salary greater than 400");
         } // Closing this block also closes the statement and the result set.
     }
+
+
+    //Check how many active users exist. The seeded users have two active and two inactive.
+    @Test 
+
+    public void twoActiveUsersExist() throws SQLException {
+        Statement statement = connection.createStatement();
+        ResultSet resultSet  = statement.executeQuery("select * from users where status ='active'");
+        int totalRowCount = 0;
+        for(int rowCount = 1; resultSet.next(); rowCount++)
+        {
+            Assert.assertEquals(resultSet.getString("status"), "active");
+            Assert.assertTrue(resultSet.getString("email").equals("qa-test@example.com") || resultSet.getString("email").equals("admin@example.com"), "Expected an active seeded email");
+
+            totalRowCount= rowCount;
+    
+        }
+
+        Assert.assertEquals(totalRowCount, 2, "Expected 2 active users");
+
+
+
+    }
 }
